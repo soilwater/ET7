@@ -1,1349 +1,405 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>ET7 — Kansas Irrigation ET Tool</title>
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ET7">
-<meta name="theme-color" content="#06060e">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="favicon.ico">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kansas 7-Day ETₒ Reference Tables</title>
 <style>
-/* ── Local fonts — place files in fonts/ next to index.html ── */
-@font-face{font-family:'IBM Plex Sans';font-weight:400;font-style:normal;font-display:swap;
+@font-face{font-family:'IBM Plex Sans';font-weight:400;font-display:swap;
   src:url('fonts/IBMPlexSans-Regular.ttf') format('truetype')}
-@font-face{font-family:'IBM Plex Sans';font-weight:600;font-style:normal;font-display:swap;
+@font-face{font-family:'IBM Plex Sans';font-weight:600;font-display:swap;
   src:url('fonts/IBMPlexSans-SemiBold.ttf') format('truetype')}
-@font-face{font-family:'IBM Plex Sans';font-weight:700;font-style:normal;font-display:swap;
+@font-face{font-family:'IBM Plex Sans';font-weight:700;font-display:swap;
   src:url('fonts/IBMPlexSans-Bold.ttf') format('truetype')}
-@font-face{font-family:'IBM Plex Mono';font-weight:400;font-style:normal;font-display:swap;
+@font-face{font-family:'IBM Plex Mono';font-weight:400;font-display:swap;
   src:url('fonts/IBMPlexMono-Regular.ttf') format('truetype')}
-@font-face{font-family:'IBM Plex Mono';font-weight:600;font-style:normal;font-display:swap;
+@font-face{font-family:'IBM Plex Mono';font-weight:600;font-display:swap;
   src:url('fonts/IBMPlexMono-SemiBold.ttf') format('truetype')}
-@font-face{font-family:'IBM Plex Mono';font-weight:700;font-style:normal;font-display:swap;
-  src:url('fonts/IBMPlexMono-Bold.ttf') format('truetype')}
-</style>
-<script src="plotly-basic-2.27.0.min.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
 
-/* ═══ THEME VARIABLES ═══════════════════════════════════════ */
-:root,[data-theme="dark"]{
-  --bg:#06060e;--panel:#0e0e1e;--surface:#161630;
-  --border:#22223a;--border-hi:#32325a;
-  --text:#f2f2ff;--dim:#9c9cca;--muted:#666674;
-  --accent:#fb8761;--accent2:#c44090;
-  --tbl-gap:rgba(255,255,255,0.22);
-  --tbl-bg:var(--panel);
-  --today-ring:#ffffff;
-  --chart-bg:#0e0e1e;
-}
-[data-theme="light"]{
-  --bg:#f2f1ec;--panel:#ffffff;--surface:#eeeaf8;
-  --border:#d0d0e4;--border-hi:#b0b0d0;
-  --text:#16152a;--dim:#5050a0;--muted:#b8b8cc;
-  --accent:#d0501a;--accent2:#8b1f65;
-  --tbl-gap:rgba(0,0,0,0.18);
-  --tbl-bg:#ffffff;
-  --today-ring:#1a1a3a;
-  --chart-bg:#ffffff;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:       #f0f5fa;
+  --surface:  #ffffff;
+  --grid:     rgba(60,120,200,0.10);
+  --border:   rgba(60,120,200,0.20);
+  --border-hi:rgba(60,120,200,0.40);
+  --text:     #0f1e2e;
+  --dim:      #3a6080;
+  --muted:    #7aa0be;
+  --accent:   #1a72cc;
+  --rule:     rgba(60,120,200,0.10);
 }
 
-html{font-size:14px;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',system-ui,sans-serif;transition:background .2s,color .2s}
-body{min-height:100vh}
-.app{max-width:560px;margin:0 auto;padding:16px 13px 40px}
-
-/* ═══ HEADER ═══════════════════════════════════════════════ */
-header{position:relative;border-bottom:1px solid var(--border);
-  padding-bottom:11px;margin-bottom:16px}
-.hdr-top{display:flex;align-items:flex-start;justify-content:space-between}
-.logo h1{font-family:'IBM Plex Sans',sans-serif;font-size:1.9rem;font-weight:700;
-  letter-spacing:.06em;line-height:1;
-  background:linear-gradient(135deg,#fb8761,#b5367a 55%,#4f127b);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-[data-theme="light"] .logo h1{
-  background:linear-gradient(135deg,#d0501a,#8b1f65 55%,#3d0f70);
-  -webkit-background-clip:text;background-clip:text}
-.logo p{color:var(--dim);font-size:.82rem;margin-top:3px;line-height:1.5}
-.hdr-icons{display:flex;gap:6px;align-items:center;flex-shrink:0;margin-left:8px}
-.hdr-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:10px}
-
-/* ═══ GENERIC CONTROLS ══════════════════════════════════════ */
-.seg{display:inline-flex;background:var(--panel);border:1px solid var(--border);
-  border-radius:7px;overflow:hidden}
-.seg-btn{padding:6px 14px;background:none;border:none;color:var(--dim);
-  font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;font-weight:400;
-  cursor:pointer;transition:background .12s,color .12s;white-space:nowrap}
-.seg-btn.active{background:var(--surface);color:var(--text);box-shadow:inset 0 0 0 1px var(--border-hi)}
-.seg-btn:hover:not(.active){color:var(--text);background:rgba(128,128,255,.07)}
-
-select.ctrl{background:var(--panel);border:1px solid var(--border-hi);color:var(--text);
-  padding:6px 10px;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;
-  font-size:1.25rem;outline:none;cursor:pointer}
-select.ctrl:focus{border-color:var(--accent2)}
-
-/* icon button */
-.icon-btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--border);
-  background:var(--panel);color:var(--dim);cursor:pointer;font-size:1rem;
-  display:flex;align-items:center;justify-content:center;transition:color .15s,border-color .15s}
-.icon-btn:hover{color:var(--text);border-color:var(--border-hi)}
-
-
-
-/* ═══ WEATHER ROW ═══════════════════════════════════════════ */
-.wx-row{display:flex;align-items:center;gap:7px;margin-bottom:13px;flex-wrap:wrap}
-.wx-label{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
-.wx-btn{padding:6px 16px;background:var(--panel);border:1.5px solid var(--border);
-  color:var(--dim);border-radius:7px;cursor:pointer;font-size:1.0rem;
-  font-family:'IBM Plex Sans',sans-serif;font-weight:400;transition:all .14s;
-  line-height:1.4;text-align:center;white-space:nowrap}
-.wx-btn:hover{border-color:var(--border-hi);color:var(--text)}
-.wx-btn.active{background:var(--surface);border-color:var(--border-hi);color:var(--text);font-weight:600}
-.wx-btn.wx-c.active{border-color:#38bdf8;color:#7dd3fc}
-.wx-btn.wx-w.active{border-color:#fb923c;color:#fdba74}
-.wx-sub{font-size:.8rem;font-weight:400;opacity:.75;display:block}
-
-/* ═══ CARDS — stacked vertical, full width, mobile-first ═══ */
-.cards{display:flex;flex-direction:column;gap:0;margin-bottom:16px;
-  background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.card{padding:13px 16px;display:flex;align-items:center;justify-content:space-between;
-  gap:12px;border-bottom:1px solid var(--border)}
-.card:last-child{border-bottom:none}
-.card-left{display:flex;flex-direction:column;gap:2px;min-width:0}
-.clbl{font-size:1.25rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--text);line-height:1.2}
-.csub{font-size:1.0rem;color:var(--dim);margin-top:2px;
-  font-family:'IBM Plex Mono',monospace;font-weight:600}
-.cval{font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:700;
-  color:var(--text);line-height:1;white-space:nowrap}
-.cval.c-eto{color:var(--accent)}
-.cval.c-etc{color:#b090ff}
-.cval.c-irr{color:#34d399}
-.cval.c-none{color:var(--muted)}
-/* rain row: input + unit inline */
-.rain-row{display:flex;align-items:baseline;gap:5px}
-input.rain-in{background:transparent;border:none;border-bottom:2px solid #38bdf8;
-  color:#38bdf8;font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:700;
-  width:65px;outline:none;padding:0;min-width:0;text-align:right}
-.rain-unit-inline{font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:700;color:#38bdf8}
-/* Table caption */
-.tbl-caption{font-size:.9rem;color:var(--dim);letter-spacing:.02em;
-  margin-bottom:8px;padding:0 2px;line-height:1.6}
-#caption-county{display:block;font-size:.78rem;color:var(--muted);margin-top:1px;
-  font-family:'IBM Plex Mono',monospace}
-
-/* Hide number input spinners — all browsers */
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] { -moz-appearance: textfield; }
-
-
-/* ═══ CROP PANEL ════════════════════════════════════════════ */
-.crop-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;
-  padding:13px 15px;margin-bottom:14px}
-.cp-top{display:flex;flex-wrap:nowrap;gap:12px;align-items:flex-end;margin-bottom:12px}
-.crop-field{flex:0 0 200px;}
-.crop-field select{width:100%;}
-.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
-.fld-lbl{font-size:1.0rem;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);font-weight:700}
-.fld select,.fld input[type=date]{background:var(--bg);border:1px solid var(--border-hi);
-  color:var(--text);padding:6px 9px;border-radius:6px;
-  font-family:'IBM Plex Sans',sans-serif;font-size:1.25rem;font-weight:400;outline:none}
-.fld select:focus,.fld input:focus{border-color:var(--accent2)}
-hr.div{border:none;border-top:1px solid var(--border);margin:10px 0}
-
-/* ── Kcb Slider ── */
-.kcb-wrap{margin-bottom:0}
-.kcb-header{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
-.kcb-title{font-size:.92rem;letter-spacing:.05em;text-transform:uppercase;
-  color:var(--dim);font-weight:700}
-input.kcb-num{background:transparent;border:none;border-bottom:2px solid var(--accent);
-  color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:700;
-  width:70px;outline:none;padding:0;min-width:0;text-align:right}
-input.kcb-num:focus{border-bottom-color:var(--accent2)}
-[data-theme="light"] input.kcb-num{color:var(--accent2);border-bottom-color:var(--accent2)}
-.kcb-svg-wrap{position:relative;cursor:ew-resize;user-select:none;touch-action:pan-y}
-#kcb-svg{display:block;width:100%;overflow:visible}
-.kcb-hint{font-size:.7rem;color:var(--muted);margin-top:4px;text-align:center}
-
-/* ═══ COLLAPSIBLE TABLE ══════════════════════════════════════ */
-details.tbl-details{margin-bottom:20px}
-details.tbl-details summary{
-  list-style:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:11px 14px;background:var(--panel);border:1px solid var(--border);
-  border-radius:10px;font-size:.82rem;font-weight:600;letter-spacing:.04em;
-  text-transform:uppercase;color:var(--dim);user-select:none;
-  transition:color .14s,border-color .14s}
-details.tbl-details summary::-webkit-details-marker{display:none}
-details.tbl-details summary::after{
-  content:'▾';font-size:1rem;color:var(--muted);transition:transform .2s}
-details.tbl-details[open] summary::after{transform:rotate(180deg)}
-details.tbl-details summary:hover{color:var(--text);border-color:var(--border-hi)}
-details.tbl-details[open] summary{border-radius:10px 10px 0 0;border-bottom-color:var(--border)}
-.tbl-details-inner{border:1px solid var(--border);border-top:none;
-  border-radius:0 0 10px 10px;padding:12px 12px 4px;background:var(--panel)}
-/* ═══ TABLE ════════════════════════════════════════════════ */
-.tbl-outer{overflow-x:auto;margin-bottom:18px;border-radius:9px;
-  border:2px solid var(--border-hi)}
-table{
-  border-collapse:separate;
-  border-spacing:2px;          /* ← gap between cells = visible grid lines */
-  background:var(--tbl-gap);  /* ← gap color */
-  white-space:nowrap;width:100%
-}
-thead th{
-  background:var(--tbl-bg);padding:8px 4px;text-align:center;
-  font-family:'IBM Plex Sans',sans-serif;font-size:1.2rem;font-weight:600;letter-spacing:.05em;
-  color:var(--dim)
-}
-th.day-th{text-align:right;padding-right:9px;font-size:1.2rem;
-  min-width:34px;color:var(--dim);font-family:'IBM Plex Mono',monospace;font-weight:400}
-th.today-col{color:var(--today-ring)}
-
-tbody td.day-td{
-  background:var(--tbl-bg);padding:2px 8px 2px 3px;text-align:right;
-  font-family:'IBM Plex Mono',monospace;font-size:1.2rem;font-weight:600;color:var(--dim)
-}
-tr.today-row td.day-td{color:var(--today-ring);font-weight:700}
-
-td.et-cell{
-  width:56px;min-width:50px;height:28px;text-align:center;padding:0;
-  font-family:'IBM Plex Mono',monospace;font-size:1.2rem;font-weight:600;
-  cursor:default;transition:filter .1s
-}
-td.et-cell:hover{filter:brightness(1.3)}
-td.et-cell.empty{background:var(--tbl-bg)}
-
-/* Today highlight — column gets faint side shading via outline on entire column */
-td.et-cell.today-col-cell{
-  outline:1px solid rgba(255,255,255,0.25);
-  outline-offset:-1px
-}
-[data-theme="light"] td.et-cell.today-col-cell{
-  outline:1px solid rgba(0,0,0,0.25)
-}
-tr.today-row td.et-cell:not(.empty){
-  outline:1px solid rgba(255,255,255,0.3);
-  outline-offset:-1px
-}
-[data-theme="light"] tr.today-row td.et-cell:not(.empty){
-  outline:1px solid rgba(0,0,0,0.3)
-}
-td.et-cell.today-cell{
-  outline:3px solid var(--today-ring) !important;
-  outline-offset:-2px;
-  z-index:2;position:relative
+html{
+  font-size:15px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;
 }
 
-/* ═══ LEGEND ═══════════════════════════════════════════════ */
-.leg-wrap{display:flex;align-items:center;gap:11px;margin-bottom:20px;padding:0 2px}
-.leg-lbl{font-size:.78rem;font-family:'IBM Plex Mono',monospace;color:var(--dim);font-weight:600}
-.leg-bar-box{flex:1;max-width:320px}
-#leg-canvas{display:block;width:100%;height:11px;border-radius:5px}
-.leg-ticks{display:flex;justify-content:space-between;margin-top:4px}
-.leg-tick{font-size:.72rem;font-family:'IBM Plex Mono',monospace;color:var(--dim);font-weight:600}
-
-/* ═══ CHART ════════════════════════════════════════════════ */
-#chart-wrap{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--chart-bg)}
-.chart-hdr{font-family:'IBM Plex Sans',sans-serif;font-size:1.05rem;font-weight:600;
-  letter-spacing:.04em;padding:12px 17px 0;color:var(--text)}
-footer{margin-top:24px;text-align:center;font-size:.7rem;color:var(--muted);letter-spacing:.04em}
-
-/* ═══ MODAL ════════════════════════════════════════════════ */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;
-  display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:var(--panel);border:1px solid var(--border-hi);border-radius:12px;
-  max-width:560px;width:100%;max-height:88vh;overflow-y:auto;padding:28px 28px 22px}
-.modal h2{font-family:'IBM Plex Sans',sans-serif;font-size:1.4rem;font-weight:700;
-  letter-spacing:.04em;color:var(--text);margin-bottom:14px}
-.modal p{font-size:.88rem;color:var(--dim);line-height:1.65;margin-bottom:10px}
-.modal p strong{color:var(--text);font-weight:600}
-.modal a{color:var(--accent);text-decoration:none}
-.modal a:hover{text-decoration:underline}
-.modal hr{border:none;border-top:1px solid var(--border);margin:14px 0}
-.modal-close{display:block;margin-top:16px;padding:9px 24px;background:var(--accent2);
-  border:none;border-radius:7px;color:#fff;font-family:'IBM Plex Sans',sans-serif;
-  font-size:.9rem;font-weight:600;cursor:pointer;transition:opacity .15s}
-.modal-close:hover{opacity:.85}
-.info-btn{padding:5px 11px;background:transparent;border:1px solid var(--border-hi);
-  color:var(--dim);border-radius:6px;font-size:.78rem;font-family:'IBM Plex Sans',sans-serif;
-  cursor:pointer;transition:color .12s,border-color .12s;white-space:nowrap}
-.info-btn:hover{color:var(--text);border-color:var(--dim)}
-
-/* ═══ RESPONSIVE ════════════════════════════════════════════ */
-@media(max-width:400px){
-  .app{padding:10px 10px 28px}
-  .logo h1{font-size:1.5rem}
-  td.et-cell{width:40px;min-width:36px;font-size:.82rem}
-  .wx-btn{padding:5px 9px;font-size:.85rem}
+/* Blueprint dot grid */
+body{
+  min-height:100vh;display:flex;flex-direction:column;
+  background-image:
+    radial-gradient(circle, rgba(60,120,200,0.18) 1px, transparent 1px);
+  background-size:28px 28px;
 }
 
+/* ── Header ──────────────────────────────────────────────────── */
+header{
+  border-bottom:1px solid var(--border);
+  background:transparent;
+}
+.hdr-outer{
+  max-width:780px;margin:0 auto;
+  border-left:1px solid var(--border);
+  border-right:1px solid var(--border);
+}
+.hdr-title{
+  padding:18px 20px 14px;
+  border-bottom:1px solid var(--rule);
+  background:var(--surface);
+}
+.hdr-label{
+  font-family:'IBM Plex Mono','Courier New',monospace;
+  font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:4px;
+}
+h1{
+  font-size:1.1rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text);line-height:1.2;
+}
+.hdr-sub{
+  font-size:.75rem;color:var(--dim);margin-top:4px;font-weight:400;
+  letter-spacing:.02em;
+}
+.hdr-controls{
+  padding:10px 20px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--surface);
+}
+
+select#county-sel{
+  flex:1;min-width:160px;
+  background:rgba(60,120,200,0.05);
+  border:1px solid var(--border);
+  color:var(--text);padding:8px 12px;
+  border-radius:2px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;
+  cursor:pointer;outline:none;
+}
+select#county-sel:focus{border-color:var(--accent)}
+select#county-sel option{background:#f0f5fa;color:#0f1e2e}
+
+.dl-btns{display:flex;gap:6px;flex-shrink:0}
+.dl-btn{
+  padding:8px 15px;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--dim);
+  border-radius:2px;
+  font-family:'IBM Plex Mono','Courier New',monospace; font-weight: 600;
+  font-size:1.0rem;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;
+  transition:border-color .12s,color .12s,background .12s;
+  white-space:nowrap;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.dl-btn:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:rgba(60,120,200,0.05);
+}
+
+/* ── Main ────────────────────────────────────────────────────── */
+main{
+  max-width:780px;margin:0 auto;width:100%;
+  padding:20px 0 56px;flex:1;
+  border-left:1px solid var(--border);
+  border-right:1px solid var(--border);
+  background:rgba(255,255,255,0.85);
+}
+.main-inner{padding:0 20px}
+
+/* ── County image ────────────────────────────────────────────── */
+.img-wrap{
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+  padding:20px 0;margin:0 0 0 0;
+}
+#county-img{
+  display:block;max-width:100%;margin:0 auto;
+  border:1px solid var(--border);
+}
+.img-error{
+  display:none;padding:56px 24px;text-align:center;
+  color:var(--dim);font-size:.88rem;line-height:1.9;
+  border:1px solid var(--border);
+  font-family:'IBM Plex Mono',monospace;
+}
+
+/* ── Summary box ─────────────────────────────────────────────── */
+.summary{
+  font-size:.85rem;color:var(--dim);line-height:1.75;
+  border-left:2px solid var(--accent);
+  padding:10px 14px;
+  margin-bottom:16px;
+  background:rgba(77,166,255,0.04);
+}
+.summary strong{color:var(--text);font-weight:600}
+
+/* ── Kc reference box ────────────────────────────────────────── */
+.kc-box{
+  border:1px solid var(--border);
+  padding:16px;margin-top:20px;
+  background:rgba(80,160,255,0.03);
+}
+.kc-box-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);opacity:.65;margin-bottom:10px;
+}
+.kc-box > p{
+  font-size:.85rem;color:var(--dim);line-height:1.75;
+  margin-bottom:14px;
+}
+.kc-box strong{color:var(--text);font-weight:600}
+.kc-formula{
+  display:inline-block;
+  border:1px solid var(--border);
+  padding:1px 8px;
+  font-family:'IBM Plex Mono','Courier New',monospace;
+  font-size:.82rem;color:var(--accent);letter-spacing:.04em;margin:0 2px;
+  background:rgba(77,166,255,0.05);
+}
+.kc-table-wrap{overflow-x:auto;border:1px solid var(--border)}
+table.kc-table{
+  border-collapse:collapse;width:100%;
+}
+table.kc-table th{
+  background:rgba(80,160,255,0.08);
+  color:var(--dim);
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:600;font-size:.68rem;
+  padding:8px 14px;text-align:left;
+  letter-spacing:.1em;text-transform:uppercase;
+  border-bottom:1px solid var(--border-hi);
+}
+table.kc-table th:not(:first-child){text-align:center}
+table.kc-table td{
+  padding:8px 14px;
+  border-bottom:1px solid var(--rule);
+  color:var(--text);font-size:.88rem;
+}
+table.kc-table td:not(:first-child){
+  text-align:center;
+  font-family:'IBM Plex Mono','Courier New',monospace;
+  font-size:.85rem;color:var(--dim);
+}
+table.kc-table tbody tr:last-child td{border-bottom:none}
+table.kc-table tbody tr:hover td{
+  background:rgba(80,160,255,0.05);
+  color:var(--text);
+}
+.kc-source{
+  font-size:.72rem;color:var(--muted);
+  margin-top:12px;line-height:1.65;
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.02em;
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer{
+  text-align:center;padding:14px;
+  font-size:.7rem;color:var(--muted);
+  border-top:1px solid var(--border);
+  font-family:'IBM Plex Mono',monospace;
+  letter-spacing:.04em;text-transform:uppercase;
+}
+
+/* ── Print ───────────────────────────────────────────────────── */
+@media print{
+  @page{size:portrait;margin:.4in}
+  header,footer,.summary,.kc-box{display:none}
+  body{background:none}
+  main{padding:0;max-width:none;border:none;background:none}
+  .main-inner{padding:0}
+  .img-wrap{border:none;padding:0}
+  #county-img{max-width:100%;max-height:96vh;border:none}
+}
 </style>
 </head>
 <body>
-<div class="app">
 
-<!-- HEADER -->
 <header>
-  <div class="hdr-top">
-    <div class="logo">
-      <h1>ET7</h1>
-      <p>Weekly crop ET and irrigation estimates. v1.0</p>
-      <p>Soil Water Processes Lab · Agronomy · K-State</p>
+  <div class="hdr-outer">
+    <div class="hdr-title">
+      <div class="hdr-label">KSU · Soil Water Processes Lab</div>
+      <h1>Kansas ET&#x2080; Reference Tables</h1>
+      <div class="hdr-sub">Typical 7-day cumulative reference evapotranspiration by county</div>
     </div>
-    <div class="hdr-icons">
-      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark">🌙</button>
-      <button class="info-btn" onclick="document.getElementById('tos-modal').style.display='flex'">ℹ</button>
-    </div>
-  </div>
-  <div class="hdr-controls">
-    <select class="ctrl" id="state-sel" onchange="onStateChange()" style="min-width:120px">
-      <option value="KS" selected>Kansas</option>
-    </select>
-    <select class="ctrl" id="county-sel" onchange="onCountyChange()" style="min-width:150px">
-      <option disabled selected>Loading counties…</option>
-    </select>
-    <div class="seg">
-      <button class="seg-btn active" id="btn-in" onclick="setUnit('in')">in</button>
-      <button class="seg-btn" id="btn-mm" onclick="setUnit('mm')">mm</button>
+    <div class="hdr-controls">
+      <select id="county-sel"><option disabled selected>Loading&#8230;</option></select>
+      <div class="dl-btns">
+        <a id="btn-jpg" class="dl-btn" href="#" download>&#11015;JPG</a>
+        <a id="btn-pdf" class="dl-btn" href="#" download>&#11015;PDF</a>
+      </div>
     </div>
   </div>
 </header>
 
-<!-- TERMS MODAL -->
-<div class="modal-backdrop" id="tos-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="modal">
-    <h2>ET7 — Weekly Irrigation Estimation Tool</h2>
-    <p><strong>Purpose.</strong> ET7 provides weekly estimates of reference and crop evapotranspiration (ET) to help guide irrigation scheduling decisions in Kansas. Values are practical approximations and are <strong>not a substitute</strong> for direct soil moisture measurements, commercial irrigation scheduling services, or site-specific agronomic advice.</p>
-    <p><strong>Crop coefficients.</strong> Basal crop coefficients (Kcb) are approximations based on FAO-56 guidelines representing typical Kansas growing conditions. Actual crop water use will vary with variety, management, and local weather.</p>
-    <p><strong>Limitations.</strong> Estimates assume typical crop development and do not account for unusual weather, pest or disease stress, soil variability, or irrigation system inefficiency. Always combine these estimates with field observations.</p>
-    <hr>
-    <p><strong>Development.</strong> Developed by the Soil Water Processes Lab, Department of Agronomy, Kansas State University. Climate data derived from GRIDMET (Abatzoglou, 2013) using the ASCE Penman-Monteith standardized equation for short reference crop ET.</p>
-    <p><strong>License.</strong> Released under the <a href="https://opensource.org/licenses/MIT" target="_blank">MIT License</a>. Use freely with attribution. No warranty is expressed or implied.</p>
-    <hr>
-    <p><strong>Open-source components.</strong>
-      Charts by <a href="https://plotly.com/javascript/" target="_blank">Plotly.js</a> (MIT).
-      Typography: <a href="https://www.ibm.com/plex/" target="_blank">IBM Plex</a> (SIL OFL 1.1).
-    </p>
-    <button class="modal-close" onclick="document.getElementById('tos-modal').style.display='none'">I understand — continue</button>
-  </div>
-</div>
+<main>
+  <div class="main-inner">
 
-<!-- WEATHER ROW -->
-<div class="wx-row">
-  <span class="wx-label">This <br> season:</span>
-  <button class="wx-btn wx-c" id="wx-0" onclick="setWeather(0)">❄ Cooler<span class="wx-sub">~25th pct.</span></button>
-  <button class="wx-btn active" id="wx-1" onclick="setWeather(1)">⛅ Typical<span class="wx-sub">Median</span></button>
-  <button class="wx-btn wx-w" id="wx-2" onclick="setWeather(2)">☀ Warmer<span class="wx-sub">~75th pct.</span></button>
-</div>
+    <!-- ═══════════════════════════════════════════════════════════
+         SUMMARY BOX — remove this div (and updateSummary() in JS)
+         to wipe this feature
+         ══════════════════════════════════════════════════════════ -->
+    <div style="padding-top:16px">
+      <div class="summary" id="summary"></div>
+    </div>
 
-<!-- CHART -->
-<div id="chart-wrap">
-  <div class="chart-hdr">Typical Weekly ET<sub>o</sub> — Reference Grass</div>
-  <div id="chart"></div>
-</div>
-<br>
-<!-- INFO CARDS — stacked, label left / value right -->
-<div class="cards">
-  <div class="card">
-    <div class="card-left">
-      <div class="clbl">Reference ET</div>
-      <div class="csub" id="c-eto-sub">Past 7 days</div>
-    </div>
-    <div class="cval c-eto" id="c-eto">—</div>
-  </div>
-  <div class="card">
-    <div class="card-left">
-      <div class="clbl">Crop coefficient K<sub>c</sub></div>
-      <div class="csub">Drag curve or edit by hand</div>
-    </div>
-    <input class="kcb-num" type="number" id="kcb-num" min="0" max="1.50" step="0.01" inputmode="decimal"
-           oninput="onKcbNumInput()">
-  </div>
-  <div class="card">
-    <div class="card-left">
-      <div class="clbl">Crop ET</div>
-      <div class="csub" id="c-etc-sub">ET × Kcb</div>
-    </div>
-    <div class="cval c-etc" id="c-etc">—</div>
-  </div>
-  <div class="card">
-    <div class="card-left">
-      <div class="clbl">Rainfall</div>
-      <div class="csub">Past 7 days. Edit by hand</div>
-    </div>
-    <div class="rain-row">
-      <input class="rain-in" type="number" id="rain-in" min="0.0" step="0.01" value="0.0" inputmode="decimal"
-             oninput="renderCards();saveState()">
-      <span class="rain-unit-inline" id="rain-unit-inline">in</span>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-left">
-      <div class="clbl">Estimated Irrigation</div>
-      <div class="csub" id="c-irr-sub">crop ET − rain</div>
-    </div>
-    <div class="cval" id="c-irr">—</div>
-  </div>
-</div>
-
-<!-- CROP PANEL -->
-<div class="crop-panel">
-  <div class="cp-top">
-    <div class="fld crop-field">
-      <span class="fld-lbl">Crop</span>
-      <select id="crop-sel" onchange="onCropChange()"></select>
-    </div>
-  </div>
-
-  <hr class="div">
-
-  <!-- Kcb Curve Slider -->
-  <div class="kcb-wrap">
-    <div class="kcb-header">
-      <span class="kcb-title">Crop coefficient K<sub>c</sub></span>=
-      <span id="kcb-header-val" style="font-weight:700">—</span><span style="color: var(--dim);"><i>(Drag to adjust)</i></span>
-    </div>
-    <div class="kcb-svg-wrap" id="kcb-svg-wrap">
-      <svg id="kcb-svg" height="168"></svg>
-    </div>
-    <div class="kcb-hint" id="kcb-hint">Estimated from typical planting date · drag to adjust</div>
-  </div>
-
-</div>
-
-<!-- COLLAPSIBLE TABLE + LEGEND -->
-<details class="tbl-details">
-  <summary>Details: Reference ET for each day of the year</summary>
-  <div class="tbl-details-inner">
-    <div class="tbl-caption">Typical weekly ET₀ - Reference Grass<span id="caption-county"></span></div>
-    <div class="tbl-outer">
-      <table id="et-table">
-        <thead><tr id="thead-r"></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    <div class="leg-wrap">
-      <span class="leg-lbl" id="l-min"></span>
-      <div class="leg-bar-box">
-        <canvas id="leg-canvas" width="320" height="11"></canvas>
-        <div class="leg-ticks">
-          <span class="leg-tick" id="lt0"></span><span class="leg-tick" id="lt1"></span>
-          <span class="leg-tick" id="lt2"></span><span class="leg-tick" id="lt3"></span>
-          <span class="leg-tick" id="lt4"></span>
-        </div>
+    <div class="img-wrap">
+      <img id="county-img" src="" alt="County ET table"
+           onerror="showErr()" onload="hideErr()">
+      <div class="img-error" id="img-error">
+        // NO IMAGE FOUND FOR THIS COUNTY
       </div>
-      <span class="leg-lbl" id="l-max"></span>
-      <span class="leg-lbl" id="l-unit" style="color:var(--muted)"></span>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         KC REFERENCE BOX — remove this entire block to wipe it
+         ══════════════════════════════════════════════════════════ -->
+    <div class="kc-box">
+      <div class="kc-box-label">Crop Water Use Estimate</div>
+      <p style="margin-bottom: 0%;">
+        Multiplying ET&#x2080; by a <strong>crop coefficient (K<sub>c</sub>)</strong>
+        estimates well-watered crop water use:
+        <span class="kc-formula">ET<sub>c</sub> = K<sub>c</sub> &times; ET&#x2080;</span>.
+      </p>
+      <p>
+        K<sub>c</sub> changes through the season, use the stage that best
+        matches your crop&rsquo;s current development.
+      </p>
+      <div class="kc-table-wrap">
+        <table class="kc-table">
+          <thead>
+            <tr>
+              <th>Crop</th>
+              <th>Initial</th>
+              <th>Development</th>
+              <th>Mid-season<br><span style="font-weight:400;opacity:.7">(peak demand)</span></th>
+              <th>Late season</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Winter Wheat</td>  <td>0.30</td><td>0.70</td><td>1.15</td><td>0.40</td></tr>
+            <tr><td>Corn</td>          <td>0.30</td><td>0.75</td><td>1.20</td><td>0.60</td></tr>
+            <tr><td>Soybean</td>       <td>0.40</td><td>0.80</td><td>1.15</td><td>0.50</td></tr>
+            <tr><td>Grain Sorghum</td> <td>0.30</td><td>0.70</td><td>1.05</td><td>0.55</td></tr>
+            <tr><td>Sunflower</td>     <td>0.35</td><td>0.75</td><td>1.10</td><td>0.35</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="kc-source">
+        Source: FAO Irrigation &amp; Drainage Paper No.&nbsp;56 (Allen et&nbsp;al., 1998).
+        Values are approximations.
+      </p>
+    </div>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
   </div>
-</details>
+</main>
 
-
-
-<footer id="footer">ET7 · KSU Soil Water Processes Lab, Agronomy · Climate data: GRIDMET</footer>
-</div><!-- .app -->
+<footer>
+  Soil Water Processes Lab &middot; Agronomy &middot; Kansas State University &middot; Climate: GRIDMET
+</footer>
 
 <script>
-// ═══════════════════════════════════════════════════════════
-//  CONSTANTS & COUNTY LIST
-// ═══════════════════════════════════════════════════════════
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const MDAYS  = [31,28,31,30,31,30,31,31,30,31,30,31];
-// County list is derived from ks_data.json keys at runtime
+var DATA = null;
 
-// ET data populated at runtime from ks_data.json
-// etStore[county] = { med:[], p25:[], p75:[], labels:[] } — 365 values in in/week
-const etStore = {};
+var MONTH_ABBR   = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+var MONTH_DAYS   = [31,28,31,30,31,30,31,31,30,31,30,31];
+var MONTH_OFFSET = (function(){
+  var off = [0], s = 0;
+  for(var i = 0; i < 11; i++){ s += MONTH_DAYS[i]; off.push(s); }
+  return off;
+})();
 
-// ═══════════════════════════════════════════════════════════
-//  CROPS — stages are the single source of truth for the Kcb
-//  curve AND phenological annotations. Each stage: {dap, label, kcb}
-//  To load from JSON: fetch('crop_stages.json') → Object.assign(CROPS, data)
-//  JSON structure: { "corn_full": { name, description, dateLabel,
-//    defaultDate, stages:[{dap,label,kcb},...] }, ... }
-// ═══════════════════════════════════════════════════════════
-const CROPS = {
-  corn_full: {
-    name:'Corn',
-    winterCrop: false, 
-    dateLabel:'Planting Date', defaultDate:'04-15',
-    stages:[
-      {dap:0,   label:'Plant.', kcb:0.15},
-      {dap:10,  label:'VE',     kcb:0.15},
-      {dap:22,  label:'V3',     kcb:0.15},
-      {dap:35,  label:'V6',     kcb:0.22},
-      {dap:48,  label:'V10',    kcb:0.48},
-      {dap:62,  label:'V14',    kcb:0.85},
-      {dap:75,  label:'VT',     kcb:1.10},
-      {dap:82,  label:'R1',     kcb:1.15},
-      {dap:117, label:'R4',     kcb:1.15},
-      {dap:132, label:'R5',     kcb:0.85},
-      {dap:145, label:'R5.5',   kcb:0.60},
-      {dap:158, label:'R6',     kcb:0.35},
-      {dap:175, label:'Mat.',   kcb:0.15},
-    ]
-  },
-  soybean: {
-    name:'Soybean',
-    winterCrop: false, 
-    dateLabel:'Planting Date', defaultDate:'05-20',
-    stages:[
-      {dap:0,   label:'Plant.', kcb:0.15},
-      {dap:10,  label:'VE',     kcb:0.15},
-      {dap:24,  label:'V2',     kcb:0.15},
-      {dap:38,  label:'V5',     kcb:0.28},
-      {dap:55,  label:'V8',     kcb:0.68},
-      {dap:68,  label:'R1',     kcb:0.90},
-      {dap:78,  label:'R2',     kcb:1.12},
-      {dap:88,  label:'R3',     kcb:1.15},
-      {dap:105, label:'R5',     kcb:1.10},
-      {dap:128, label:'R6',     kcb:0.70},
-      {dap:148, label:'R7',     kcb:0.35},
-      {dap:165, label:'R8',     kcb:0.15},
-    ]
-  },
-winterWheat: {
-  name:'Winter Wheat',
-  winterCrop: true,
-  dateLabel:'Seeding Date', defaultDate:'10-10',
-  stages:[
-    {dap:0,   label:'Plant.',  kcb:0.15},
-    {dap:15,  label:'Emerg.',  kcb:0.15},
-    {dap:30,  label:'Tiller',  kcb:0.15},  // tillers form but Kcb stays low
-    {dap:75,  label:'Dormant', kcb:0.15},  // ~late Dec through Feb, vernalization
-    {dap:130, label:'Greenup', kcb:0.20},  // ~late Feb / early Mar, spring growth resumes
-    {dap:150, label:'Elong.',  kcb:0.45},  // jointing / stem elongation
-    {dap:165, label:'Boot',    kcb:0.82},
-    {dap:178, label:'Flag',    kcb:1.00},
-    {dap:200, label:'Flower',  kcb:1.10},
-    {dap:215, label:'Milk',    kcb:0.90},
-    {dap:230, label:'Dough',   kcb:0.55},
-    {dap:255, label:'Mat.',    kcb:0.15},
-  ]
-},
-  sorghum: {
-    name:'Grain Sorghum',
-    winterCrop: false,
-    dateLabel:'Planting Date', defaultDate:'06-01',
-    stages:[
-      {dap:0,   label:'Plant.',  kcb:0.15},
-      {dap:10,  label:'VE',      kcb:0.15},
-      {dap:22,  label:'V3',      kcb:0.15},
-      {dap:38,  label:'V6',      kcb:0.35},
-      {dap:54,  label:'V9',      kcb:0.72},
-      {dap:68,  label:'Boot',    kcb:0.90},
-      {dap:80,  label:'Head',    kcb:1.00},
-      {dap:90,  label:'Flower',  kcb:1.00},
-      {dap:112, label:'S.dough', kcb:0.90},
-      {dap:130, label:'H.dough', kcb:0.60},
-      {dap:145, label:'Blk lyr', kcb:0.35},
-      {dap:152, label:'Mat.',    kcb:0.15},
-    ]
-  },
-  sunflower: {
-    name:'Sunflower',
-    winterCrop: false,
-    dateLabel:'Planting Date', defaultDate:'06-01',
-    stages:[
-      {dap:0,   label:'Plant.', kcb:0.15},
-      {dap:10,  label:'VE',     kcb:0.15},
-      {dap:24,  label:'V4',     kcb:0.15},
-      {dap:38,  label:'V8',     kcb:0.36},
-      {dap:55,  label:'R1',     kcb:0.75},
-      {dap:70,  label:'R3',     kcb:1.05},
-      {dap:82,  label:'R5',     kcb:1.10},
-      {dap:100, label:'R7',     kcb:0.90},
-      {dap:120, label:'R9',     kcb:0.50},
-      {dap:140, label:'Mat.',   kcb:0.25},
-    ]
-  },
-};
-
-// Helper: last stage DAP = total season length
-function cropTotalDays(crop){ return crop.stages[crop.stages.length-1].dap; }
-
-// ═══════════════════════════════════════════════════════════
-//  STATES — add new states here as data files become available
-// ═══════════════════════════════════════════════════════════
-const STATES = {
-  KS: { label:'Kansas',   file:'ks_data.json' },
-  // NE: { label:'Nebraska', file:'ne_data.json' },
-  // CO: { label:'Colorado', file:'co_data.json' },
-};
-
-// wxIdx: 0=cooler (p25), 1=typical (med), 2=warmer (p75)
-// Selects which percentile is used for today's ETo card and chart marker
-
-// ═══════════════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════════════
-const today = new Date();
-const T_MON = today.getMonth(), T_DAY = today.getDate();
-
-const S = {
-  state:      'KS',
-  county:     null,
-  unit:       'in',
-  wxIdx:      1,
-  crop:       'corn_full',
-  kcbDap:     null,
-  kcbManual:  false,
-  kcbOverride:null,
-};
-
-// ═══════════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════════
-function getDOY(m,d){ let n=d; for(let i=0;i<m;i++) n+=MDAYS[i]; return n; }
-
-// ═══════════════════════════════════════════════════════════
-//  DAP APPROXIMATION — from typical planting date in CROPS
-// ═══════════════════════════════════════════════════════════
-function typicalDapToday(cropKey){
-  const crop = CROPS[cropKey];
-  const [mo, dy] = crop.defaultDate.split('-').map(Number);
-  const total = cropTotalDays(crop);
-  const todayDOY = getDOY(T_MON, T_DAY);
-  const plantDOY = getDOY(mo - 1, dy);
-  let dap = crop.winterCrop
-    ? (() => { let d = todayDOY - plantDOY; return d < 0 ? d + 365 : d; })()
-    : todayDOY - plantDOY;
-  return Math.max(0, Math.min(total, dap));
+function todayDOYIndex(){
+  var d = new Date();
+  return MONTH_OFFSET[d.getMonth()] + (d.getDate() - 1);
+}
+function fmtDate(d){
+  return MONTH_ABBR[d.getMonth()] + ' ' + d.getDate();
 }
 
-function autoPositionKcb(){
-  const total = cropTotalDays(CROPS[S.crop]);
-  const dap = typicalDapToday(S.crop);
-  S.kcbDap = dap; S.kcbOverride = null; S.kcbManual = false;
-  const v = kcbAtDap(S.crop, dap);
-  if(v != null) document.getElementById('kcb-num').value = v.toFixed(2);
-  const pct = Math.round(dap / total * 100);
-  document.getElementById('kcb-hint').textContent =
-    `~${pct}% through typical season · drag to adjust`;
+function updateSummary(county){
+  if(!DATA) return;
+  var cd  = DATA.counties[county];
+  var idx = todayDOYIndex();
+  var med = (cd.med[idx] / 25.4).toFixed(2);
+  var p25 = (cd.p25[idx] / 25.4).toFixed(2);
+  var p75 = (cd.p75[idx] / 25.4).toFixed(2);
+  var today = new Date();
+  var start = new Date(today); start.setDate(start.getDate() - 6);
+  document.getElementById('summary').innerHTML =
+    'The typical 7-day cumulative reference ET\u2080 from ' +
+    '<strong>' + fmtDate(start) + ' to ' + fmtDate(today) + '</strong>' +
+    ' for <strong>' + county + ' County</strong> is ' +
+    '<strong>' + med + '\u2009in/week</strong>, with typical values ranging from ' +
+    '<strong>' + p25 + '</strong> to <strong>' + p75 + '\u2009in/week</strong>' +
+    ' (25th\u201375th percentile).';
 }
 
-function kcbAtDap(cropKey, dap){
-  const stages = CROPS[cropKey].stages;
-  if(dap <= stages[0].dap) return stages[0].kcb;
-  for(let i=1; i<stages.length; i++){
-    if(dap <= stages[i].dap){
-      const t = (dap - stages[i-1].dap) / (stages[i].dap - stages[i-1].dap);
-      return stages[i-1].kcb + t * (stages[i].kcb - stages[i-1].kcb);
-    }
-  }
-  return stages[stages.length-1].kcb;
-}
+async function init(){
+  var resp = await fetch('ks_data.json');
+  DATA = await resp.json();
 
-function currentKcb(){
-  if(S.kcbOverride != null) return S.kcbOverride;
-  const dap = S.kcbDap;
-  const total = cropTotalDays(CROPS[S.crop]);
-  if(dap == null) return kcbAtDap(S.crop, Math.round(total * 0.45));
-  if(dap < 0 || dap > total) return null;
-  return kcbAtDap(S.crop, dap);
-}
-
-function getETo(m, d){
-  // Returns today's ET from the percentile selected by wxIdx
-  const c = etStore[S.county]; if(!c) return null;
-  const doy = getDOY(m, d);  // 1-based
-  const arr = S.wxIdx===0 ? c.p25 : S.wxIdx===2 ? c.p75 : c.med;
-  return arr[doy - 1] ?? null;
-}
-
-function fmt(v){ if(v==null) return '—'; return S.unit==='in' ? (v/25.4).toFixed(2) : v.toFixed(1); }
-function fmtU(v){ return v!=null ? fmt(v)+' '+(S.unit==='in'?'in':'mm') : '—'; }
-
-// ═══════════════════════════════════════════════════════════
-//  DATA LOADER — fetches state JSON on page load / state change
-// ═══════════════════════════════════════════════════════════
-async function fetchCountyData(stateKey){
-  const st = STATES[stateKey || S.state];
-  if(!st) return;
-  try{
-    const resp = await fetch(st.file);
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    const counties = data.counties || {};
-    // Store shared DOY and label arrays on etStore meta
-    etStore.__doy    = data.doy    || [];
-    etStore.__labels = data.label  || [];
-    Object.entries(counties).forEach(([name, county])=>{
-      // Store values in mm — the native unit of the JSON
-      etStore[name] = {
-        med: county.med.map(v => v ?? null),
-        p25: county.p25.map(v => v ?? null),
-        p75: county.p75.map(v => v ?? null),
-      };
-    });
-    const names = Object.keys(counties);
-    if(names.length && (!S.county || !etStore[S.county])) S.county = names[0];
-    buildCountyDropdown(names);
-  } catch(err){
-    showLoadError(err);
-  }
-}
-
-function showLoadError(err){
-  const file = STATES[S.state]?.file || 'data file';
-  console.error('Could not load', file, err);
-  const banner = document.createElement('div');
-  banner.style.cssText = [
-    'background:#7f1d1d','color:#fecaca','border:1px solid #b91c1c',
-    'border-radius:9px','padding:18px 22px','margin-bottom:18px',
-    'font-size:.9rem','line-height:1.6'
-  ].join(';');
-  banner.innerHTML = `
-    <strong style="font-size:1rem;display:block;margin-bottom:6px">⚠ Could not load climate data</strong>
-    Could not fetch <code>${file}</code>. Make sure the file is in the same
-    folder as this page and the page is being served over HTTP (not opened as a local file).
-    <br><br>
-    <button onclick="location.reload()"
-      style="background:#b91c1c;border:none;color:#fff;padding:7px 18px;border-radius:6px;
-             cursor:pointer;font-size:.85rem;font-weight:600">
-      ↺ Reload page
-    </button>`;
-  // Insert at top of .app, before the header
-  const app = document.querySelector('.app');
-  app.insertBefore(banner, app.firstChild);
-  // Disable county dropdown
-  const sel = document.getElementById('county-sel');
-  sel.innerHTML = '<option disabled selected>No data</option>';
-}
-
-function buildCountyDropdown(names){
-  const sel = document.getElementById('county-sel');
+  var sel = document.getElementById('county-sel');
   sel.innerHTML = '';
-  [...names].sort().forEach(name => {
-    const o = document.createElement('option');
-    o.value = name; o.textContent = name;
-    if(name === S.county) o.selected = true;
+  Object.keys(DATA.counties).sort().forEach(function(name){
+    var o = document.createElement('option');
+    o.value = name;
+    o.textContent = name + ' County';
     sel.appendChild(o);
   });
-}
 
-
-
-// ═══════════════════════════════════════════════════════════
-//  THEME TOGGLE
-// ═══════════════════════════════════════════════════════════
-function toggleTheme(){
-  const html=document.documentElement;
-  const isDark=html.dataset.theme==='dark';
-  html.dataset.theme=isDark?'light':'dark';
-  document.getElementById('theme-btn').textContent=isDark?'🌙':'☀️';
-  drawKcbCurve();
-  renderChart();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  MAGMA COLORMAP
-// ═══════════════════════════════════════════════════════════
-const MAGMA=[
-  [0,0,4],[28,16,68],[79,18,123],[129,37,129],
-  [181,54,122],[229,80,100],[251,135,97],[254,195,149],[252,253,191]
-];
-function magmaRGB(t){
-  t=Math.max(0,Math.min(1,t));
-  const n=MAGMA.length-1,f=t*n,lo=Math.floor(f),hi=Math.min(lo+1,n),fr=f-lo;
-  return MAGMA[lo].map((c,i)=>Math.round(c+fr*(MAGMA[hi][i]-c)));
-}
-function cellStyle(v,mn,mx){
-  const t=(v-mn)/(mx-mn);
-  const [r,g,b]=magmaRGB(t);
-  const lum=(0.299*r+0.587*g+0.114*b)/255;
-  return {bg:`rgb(${r},${g},${b})`,fg:lum>0.44?'#111':'#eee'};
-}
-
-// ═══════════════════════════════════════════════════════════
-//  LEGEND
-// ═══════════════════════════════════════════════════════════
-function renderLegend(mn,mx){
-  const cv=document.getElementById('leg-canvas');
-  const ctx=cv.getContext('2d');
-  const w=cv.width;
-  for(let x=0;x<w;x++){
-    const [r,g,b]=magmaRGB(x/w);
-    ctx.fillStyle=`rgb(${r},${g},${b})`; ctx.fillRect(x,0,1,11);
-  }
-  const mul=S.unit==='in'?1/25.4:1, dp=S.unit==='in'?2:1;
-  document.getElementById('l-min').textContent=(mn*mul).toFixed(dp);
-  document.getElementById('l-max').textContent=(mx*mul).toFixed(dp);
-  document.getElementById('l-unit').textContent=S.unit==='in'?'in/week':'mm/week';
-  ['lt0','lt1','lt2','lt3','lt4'].forEach((id,i)=>{
-    document.getElementById(id).textContent=((mn+(mx-mn)*(i/4))*mul).toFixed(dp);
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-//  Kcb SVG CURVE SLIDER
-// ═══════════════════════════════════════════════════════════
-const KP={t:80,b:28,l:30,r:8};
-
-function drawKcbCurve(){
-  const svg=document.getElementById('kcb-svg');
-  const wrap=document.getElementById('kcb-svg-wrap');
-  const W=wrap.clientWidth||400, H=250;
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  svg.style.height=H+'px';
-
-  const crop=CROPS[S.crop];
-  const total = cropTotalDays(crop);
-  const iW=W-KP.l-KP.r, iH=H-KP.t-KP.b;
-  const xS=d=>KP.l+Math.max(0,Math.min(1,d/total))*iW;
-  const yS=k=>KP.t+Math.max(0,Math.min(1,1-k/1.30))*iH;
-
-  // Build curve path from stages
-  const pts=crop.stages.map(s=>[xS(s.dap),yS(s.kcb)]);
-  const lineD=pts.map(([x,y],i)=>(i===0?`M${x.toFixed(1)},${y.toFixed(1)}`:`L${x.toFixed(1)},${y.toFixed(1)}`)).join(' ');
-  const areaD=lineD+` L${pts[pts.length-1][0].toFixed(1)},${(H-KP.b).toFixed(1)} L${pts[0][0].toFixed(1)},${(H-KP.b).toFixed(1)} Z`;
-
-  // Handle position
-  const dap = S.kcbDap ?? Math.round(total*0.45);
-  const clampDap = Math.max(0, Math.min(total, dap));
-  const kcbVal = S.kcbOverride ?? kcbAtDap(S.crop, clampDap);
-  const hx = xS(clampDap);
-  const hy = kcbVal != null ? yS(kcbVal) : H/2;
-
-  const yLabels=[[0,'0.0'],[0.4,'0.4'],[0.8,'0.8'],[1.15,'1.15']];
-  const xLabels=[[0,'Start'],[0.5,'Mid-season'],[1,'Maturity']];
-
-  // Theme colors
-  const isDark=document.documentElement.dataset.theme==='dark';
-  const curveColor=isDark?'#b5367a':'#8b1f65';
-  const fillOpacity=isDark?'0.35':'0.20';
-  const axisColor=isDark?'rgba(96,96,160,0.5)':'rgba(80,80,160,0.35)';
-  const gridColor=isDark?'rgba(96,96,160,0.2)':'rgba(80,80,160,0.12)';
-  const textColor=isDark?'#8080b8':'#6060a0';
-  const stageLineColor=isDark?'rgba(180,180,240,0.40)':'rgba(50,50,130,0.30)';
-  const stageLabelColor=isDark?'#9090c8':'#5050a0';
-  const handleFill='#fff';
-  const handleStroke=isDark?'#06060e':'#f2f1ec';
-
-  let out = `<defs>
-    <linearGradient id="kgr" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${curveColor}" stop-opacity="${fillOpacity}"/>
-      <stop offset="100%" stop-color="${curveColor}" stop-opacity="0.03"/>
-    </linearGradient>
-  </defs>`;
-
-  // Y grid lines
-  yLabels.forEach(([k])=>{
-    const y=yS(k);
-    out+=`<line x1="${KP.l}" y1="${y.toFixed(1)}" x2="${W-KP.r}" y2="${y.toFixed(1)}" stroke="${gridColor}" stroke-width="1"/>`;
-  });
-
-  // ── PHENOLOGICAL STAGE LINES (behind curve) ──────────────
-  const stages = crop.stages;
-  const rowY = [KP.t - 5, KP.t - 5];
-  stages.forEach((st, i) => {
-    if(st.dap < 0 || st.dap > total) return;
-    const x = xS(st.dap);
-    const row = i % 2;
-    const ly = rowY[row];
-
-    // dashed vertical line
-    out += `<line x1="${x.toFixed(1)}" y1="${(KP.t).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(H-KP.b).toFixed(1)}"
-      stroke="${stageLineColor}" stroke-width="1.1" stroke-dasharray="3,3"/>`;
-
-    // rotated label: rotate -90° around (x, ly) so text goes upward
-    out += `<text
-      x="${x.toFixed(1)}" y="${ly.toFixed(1)}"
-      transform="rotate(-90 ${x.toFixed(1)} ${ly.toFixed(1)})"
-      text-anchor="start" dominant-baseline="middle"
-      font-size="16" fill="${stageLabelColor}"
-      font-family="IBM Plex Mono,monospace">${st.label}</text>`;
-  });
-
-  // ── CURVE AREA + LINE (on top of stage lines) ───────────
-  out+=`<path d="${areaD}" fill="url(#kgr)"/>`;
-  out+=`<path d="${lineD}" fill="none" stroke="${curveColor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
-
-  // X-axis baseline
-  out+=`<line x1="${KP.l}" y1="${H-KP.b}" x2="${W-KP.r}" y2="${H-KP.b}" stroke="${axisColor}" stroke-width="1"/>`;
-
-  // Y labels
-  yLabels.forEach(([k,lbl])=>{
-    const y=yS(k);
-    out+=`<text x="${(KP.l-2).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="end" font-size="12.0" fill="${textColor}" font-family="IBM Plex Mono,monospace">${lbl}</text>`;
-  });
-
-  // X labels
-  xLabels.forEach(([f,lbl])=>{
-    const x=KP.l+f*iW;
-    const anchor=f===0?'start':f===1?'end':'middle';
-    out+=`<text x="${x.toFixed(1)}" y="${(H-3).toFixed(1)}" text-anchor="${anchor}" font-size="12.0" fill="${textColor}" font-family="IBM Plex Sans,sans-serif">${lbl}</text>`;
-  });
-
-  // Today vertical — show when not manually overridden
-  if(!S.kcbManual){
-    const todayDap = typicalDapToday(S.crop);
-    const tx = xS(todayDap);
-    out+=`<line x1="${tx.toFixed(1)}" y1="${KP.t}" x2="${tx.toFixed(1)}" y2="${H-KP.b}" stroke="rgba(255,255,255,0.35)" stroke-width="1.5" stroke-dasharray="3,2"/>`;
-  }
-
-  // Handle vertical line + circle
-  out+=`<line x1="${hx.toFixed(1)}" y1="${KP.t}" x2="${hx.toFixed(1)}" y2="${(H-KP.b).toFixed(1)}" stroke="${curveColor}" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.7"/>`;
-  out+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="15" fill="transparent"/>`;
-  out+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="9" fill="${handleFill}" stroke="${handleStroke}" stroke-width="2.5"/>`;
-  out+=`<circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="3.5" fill="${curveColor}"/>`;
-
-  svg.innerHTML=out;
-}
-
-function setupKcbDrag(){
-  const wrap=document.getElementById('kcb-svg-wrap');
-  let dragging=false;
-  let touchStartX=0, touchStartY=0, dragConfirmed=false;
-
-  function dapFromX(clientX){
-    const r=wrap.getBoundingClientRect();
-    const frac=Math.max(0,Math.min(1,(clientX-r.left-KP.l)/(r.width-KP.l-KP.r)));
-    return Math.round(frac*cropTotalDays(CROPS[S.crop]));
-  }
-  function apply(dap){
-    S.kcbDap=dap; S.kcbOverride=null; S.kcbManual=true;
-    const v=kcbAtDap(S.crop,dap);
-    if(v!=null) document.getElementById('kcb-num').value=v.toFixed(2);
-    drawKcbCurve(); renderCards(); saveState();
-  }
-  function cleanup(){
-    dragging=false; dragConfirmed=false;
-    document.removeEventListener('touchmove', onTouchMove);
-    document.removeEventListener('touchend',  onTouchEnd);
-    document.removeEventListener('touchcancel', onTouchEnd);
-  }
-
-  // ── Mouse (desktop) ──────────────────────────────────────
-  wrap.addEventListener('mousedown', e=>{
-    dragging=true; apply(dapFromX(e.clientX)); e.preventDefault();
-  });
-  document.addEventListener('mousemove', e=>{ if(dragging) apply(dapFromX(e.clientX)); });
-  document.addEventListener('mouseup', ()=>{ dragging=false; });
-
-  // ── Touch (mobile) ───────────────────────────────────────
-  // Strategy: don't apply on touchstart. Wait for movement.
-  // If movement is mostly horizontal → confirmed drag (prevent scroll + apply).
-  // If movement is mostly vertical → let scroll happen, abort drag.
-  function onTouchMove(e){
-    const dx = Math.abs(e.touches[0].clientX - touchStartX);
-    const dy = Math.abs(e.touches[0].clientY - touchStartY);
-
-    if(!dragConfirmed){
-      if(dx < 6 && dy < 6) return;       // not enough movement yet
-      if(dy > dx){ cleanup(); return; }   // vertical scroll — abort
-      dragConfirmed=true;
-    }
-    e.preventDefault();
-    apply(dapFromX(e.touches[0].clientX));
-  }
-  function onTouchEnd(){ cleanup(); }
-
-  wrap.addEventListener('touchstart', e=>{
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    dragging=true; dragConfirmed=false;
-    // Attach to document only for this drag — removed in cleanup()
-    document.addEventListener('touchmove',   onTouchMove, {passive:false});
-    document.addEventListener('touchend',    onTouchEnd);
-    document.addEventListener('touchcancel', onTouchEnd);
-    // Don't preventDefault here — let the browser decide scroll vs drag
-    // until we confirm the direction in onTouchMove
-  },{passive:true});
-}
-
-function onKcbNumInput(){
-  const v=parseFloat(document.getElementById('kcb-num').value);
-  if(isNaN(v)||v<0) return;
-  S.kcbOverride=Math.min(1.50,v);
-  S.kcbManual=true;
-  const crop=CROPS[S.crop];
-  const total = cropTotalDays(crop);
-  let bestDap=0, bestDiff=999;
-  for(let d=0;d<=total;d++){
-    const diff=Math.abs((kcbAtDap(S.crop,d)||0)-v);
-    if(diff<bestDiff){bestDiff=diff;bestDap=d;}
-  }
-  S.kcbDap=bestDap;
-  drawKcbCurve(); renderCards(); saveState();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  INFO CARDS
-// ═══════════════════════════════════════════════════════════
-function renderCards(){
-  const eto = getETo(T_MON, T_DAY);
-  const kcb = currentKcb();
-  const etc = (eto!=null && kcb!=null) ? eto*kcb : null;
-
-  // Rain: input is in display units → convert to mm for all calculation
-  const rainDisplay = parseFloat(document.getElementById('rain-in').value)||0;
-  const rainMm = S.unit==='in' ? rainDisplay*25.4 : rainDisplay;
-
-  // irr in mm — fmtU handles conversion to inches for display
-  const irr = etc!=null ? Math.max(0, etc - rainMm) : null;
-
-  // Reference ET
-  document.getElementById('c-eto').textContent = fmtU(eto);
-  const countyLabel = S.county ? `${S.county} County` : 'select a county';
-  document.getElementById('c-eto-sub').textContent = `${countyLabel} · past 7 days`;
-
-  // Kcb — update input and header value only when not focused
-  const kcbInput = document.getElementById('kcb-num');
-  if(kcb!=null && document.activeElement !== kcbInput)
-    kcbInput.value = kcb.toFixed(2);
-  const hdrVal = document.getElementById('kcb-header-val');
-  if(hdrVal) hdrVal.textContent = kcb != null ? kcb.toFixed(2) : '—';
-
-  // Crop ET
-  document.getElementById('c-etc').textContent = fmtU(etc);
-  document.getElementById('c-etc-sub').textContent = kcb!=null
-    ? `ET × Kcb ${kcb.toFixed(2)}`
-    : 'ET × Kcb';
-
-  // Rain unit label
-  document.getElementById('rain-unit-inline').textContent = S.unit==='mm' ? 'mm' : 'in';
-
-  // Irrigation — use fmtU for all values so unit conversion is consistent
-  const irrEl  = document.getElementById('c-irr');
-  const irrSub = document.getElementById('c-irr-sub');
-  if(irr!=null){
-    irrEl.className = 'cval '+(irr>0?'c-irr':'c-none');
-    irrEl.textContent = irr>0 ? fmtU(irr) : 'None needed';
-    irrSub.textContent = irr>0
-      ? `${fmtU(etc)} − ${fmtU(rainMm)}`
-      : 'Precip ≥ crop ET';
-  } else {
-    irrEl.className = 'cval c-none';
-    irrEl.textContent = '—';
-    irrSub.textContent = 'crop ET − rain';
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  TABLE
-// ═══════════════════════════════════════════════════════════
-function renderTable(){
-  const c = etStore[S.county]; if(!c) return;
-  const mn=6.5, mx=46.0;  // mm/week range (≈ 0.25–1.80 in/week)
-  const thead=document.getElementById('thead-r');
-  thead.innerHTML='<th class="day-th">Day</th>';
-  MONTHS.forEach((m,i)=>{
-    const th=document.createElement('th');
-    th.textContent=m; if(i===T_MON) th.className='today-col'; thead.appendChild(th);
-  });
-  const tbody=document.getElementById('tbody'); tbody.innerHTML='';
-  for(let d=1;d<=31;d++){
-    const tr=document.createElement('tr'); if(d===T_DAY) tr.className='today-row';
-    const td0=document.createElement('td'); td0.className='day-td'; td0.textContent=d; tr.appendChild(td0);
-    for(let m=0;m<12;m++){
-      const td=document.createElement('td'); td.className='et-cell';
-      if(d>MDAYS[m]){td.classList.add('empty');tr.appendChild(td);continue;}
-      const doy = getDOY(m, d);  // 1-based
-      const raw = c.med[doy - 1];  // mm — table always shows median
-      if(raw==null){td.classList.add('empty');tr.appendChild(td);continue;}
-      const dv = S.unit==='in' ? (raw/25.4) : raw;
-      const {bg,fg}=cellStyle(raw,mn,mx);
-      td.style.backgroundColor=bg; td.style.color=fg;
-      td.textContent=S.unit==='in'?dv.toFixed(2):dv.toFixed(1);
-      if(m===T_MON) td.classList.add('today-col-cell');
-      if(m===T_MON&&d===T_DAY) td.classList.add('today-cell');
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  }
-  requestAnimationFrame(()=>{
-    const el=tbody.querySelector('.today-cell');
-    if(el) el.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});
-  });
-  renderLegend(mn,mx);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  PLOTLY CHART
-// ═══════════════════════════════════════════════════════════
-function renderChart(){
-  const c = etStore[S.county]; if(!c) return;
-  const mul = S.unit==='in' ? 1/25.4 : 1;
-  const ul  = S.unit==='in' ? 'in/week' : 'mm/week';
-  const dp  = S.unit==='in' ? 2 : 1;
-  const maxY = S.unit==='in' ? 2.5 : 55;
-  const todayDOY = getDOY(T_MON, T_DAY);
-
-  // Build DOY x-axis using shared labels if available, else generate
-  const labels = etStore.__labels?.length === 365
-    ? etStore.__labels
-    : Array.from({length:365}, (_,i)=>`DOY ${i+1}`);
-
-  const med = c.med.map(v => v != null ? v*mul : null);
-  const p25 = c.p25.map(v => v != null ? v*mul : null);
-  const p75 = c.p75.map(v => v != null ? v*mul : null);
-
-  // Today marker uses the percentile selected by wxIdx
-  const markerArr = S.wxIdx===0 ? p25 : S.wxIdx===2 ? p75 : med;
-  const markerY   = markerArr[todayDOY - 1];
-
-  const isDark=document.documentElement.dataset.theme==='dark';
-  const bg        = isDark?'#0e0e1e':'#ffffff';
-  const grid      = isDark?'rgba(130,130,200,0.15)':'#e8e8f4';
-  const tickColor = isDark?'#a0a0d8':'#5050a0';
-  const axisTitle = isDark?'#c0c0e8':'#3030a0';
-  const lc        = isDark?'#d8d8f8':'#2020c0';
-  const chartFontSz = window.innerWidth < 500 ? 10 : 12;
-  const axisTitleSz = window.innerWidth < 500 ? 11 : 13;
-
-  // Band: p25–p75
-  const band={
-    x:[...labels,...labels.slice().reverse()],
-    y:[...p75,...p25.slice().reverse()],
-    fill:'toself',
-    fillcolor:isDark?'rgba(160,140,220,.18)':'rgba(80,80,200,.10)',
-    line:{color:'transparent'},name:'25th–75th pct.',hoverinfo:'skip',showlegend:true};
-
-  // Median line
-  const medLine={
-    x:labels, y:med, mode:'lines',
-    line:{color:lc,width:2.5}, name:'Typical (median)',
-    hovertemplate:`%{x}<br>ET₀: %{y:.${dp}f} ${ul}<extra></extra>`};
-
-  // Today marker
-  const wxLabel = S.wxIdx===0?'Cooler (p25)':S.wxIdx===2?'Warmer (p75)':'Typical (median)';
-  const todayMark={
-    x:[labels[todayDOY-1]], y:[markerY], mode:'markers',
-    marker:{color:isDark ? '#ffffff' : '#1a1a3a',size:11,symbol:'circle',line:{color:bg,width:2.5}},
-    name:`Today · ${wxLabel}`,
-    hovertemplate:`Today (DOY ${todayDOY})<br>ET₀: %{y:.${dp}f} ${ul}<extra></extra>`};
-
-  const chartH = window.innerWidth < 500
-    ? Math.round(window.innerWidth * 0.55) : 340;
-
-  const layout={
-    dragmode: false,
-    height:chartH, paper_bgcolor:bg, plot_bgcolor:bg,
-    font:{color:tickColor, family:"'IBM Plex Sans',sans-serif", size:chartFontSz},
-    xaxis:{
-      title:{text:'Day of Year', font:{size:axisTitleSz,color:axisTitle}, standoff:6},
-      gridcolor:grid, gridwidth:1, zeroline:false,
-      tickmode:'array',
-      tickvals:[1,32,60,91,121,152,182,213,244,274,305,335],
-      ticktext:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-      range:[0.5,365.5], tickfont:{size:chartFontSz,color:tickColor},
-      showline:false, ticklen:4},
-    yaxis:{
-      title:{text:`Reference ET (${ul})`, font:{size:axisTitleSz,color:axisTitle}, standoff:6},
-      gridcolor:grid, gridwidth:1, zeroline:false, range:[0,maxY],
-      tickfont:{size:chartFontSz,color:tickColor},
-      tickformat:S.unit==='mm'?'.0f':'.1f', showline:false, ticklen:4},
-    legend:{x:.01,y:.98,bgcolor:'rgba(0,0,0,0)',font:{size:chartFontSz,color:tickColor},
-      bordercolor:isDark?'rgba(130,130,200,.25)':'#d0d0e8',borderwidth:1},
-    margin:{t:12,b:window.innerWidth<500?40:50,l:window.innerWidth<500?52:62,r:12},
-    hovermode:'x unified',
-    shapes:[{type:'line',x0:labels[todayDOY-1],x1:labels[todayDOY-1],y0:0,y1:maxY,
-      line:{color:isDark?'rgba(255,255,255,.22)':'rgba(0,0,80,.18)',width:1.5,dash:'dot'}}]
-  };
-  Plotly.newPlot('chart',[band,medLine,todayMark],layout,{displayModeBar:false,responsive:true, scrollZoom: false});
-}
-
-// ═══════════════════════════════════════════════════════════
-//  PERSIST — save/restore settings via localStorage
-// ═══════════════════════════════════════════════════════════
-function saveState(){
-  try{
-    localStorage.setItem('et7_state', JSON.stringify({
-      state:      S.state,
-      county:     S.county,
-      crop:       S.crop,
-      // Always save rain in mm regardless of display unit
-      rain: (()=>{ const v=parseFloat(document.getElementById('rain-in').value)||0;
-                   return S.unit==='in' ? v*25.4 : v; })(),
-      kcbOverride:S.kcbOverride,
-      kcbDap:     S.kcbDap,
-      kcbManual:  S.kcbManual,
-      wxIdx:      S.wxIdx,
-      unit:       S.unit,
-    }));
-  } catch(e){}
-}
-
-// Returns the saved rain value (needs to be applied after UI is built)
-function loadState(){
-  try{
-    const raw = localStorage.getItem('et7_state');
-    if(!raw) return null;
-    const sv = JSON.parse(raw);
-    if(sv.state  && STATES[sv.state])        S.state  = sv.state;
-    if(sv.crop   && CROPS[sv.crop])          S.crop   = sv.crop;
-    if(sv.county)                            S.county = sv.county;
-    if(sv.wxIdx  != null)                    S.wxIdx  = sv.wxIdx;
-    if(sv.kcbOverride != null)               S.kcbOverride = sv.kcbOverride;
-    if(sv.kcbDap != null)                    S.kcbDap = sv.kcbDap;
-    if(sv.kcbManual != null)                 S.kcbManual = sv.kcbManual;
-    if(sv.unit)                              S.unit   = sv.unit;
-    return sv; // caller picks up sv.rain
-  } catch(e){ return null; }
-}
-
-// ═══════════════════════════════════════════════════════════
-//  EVENT HANDLERS
-// ═══════════════════════════════════════════════════════════
-function setUnit(u){
-  const prev = S.unit;  // capture before changing
-  S.unit = u;
-  document.getElementById('btn-in').classList.toggle('active',u==='in');
-  document.getElementById('btn-mm').classList.toggle('active',u==='mm');
-  // Convert rain input from previous display unit to new display unit
-  const ri = document.getElementById('rain-in');
-  const v = parseFloat(ri.value)||0;
-  if(prev==='in' && u==='mm') ri.value = (v*25.4).toFixed(1);
-  else if(prev==='mm' && u==='in') ri.value = (v/25.4).toFixed(2);
-  saveState();
-  render();
-}
-
-function setWeather(i){
-  S.wxIdx=i;
-  [0,1,2].forEach(j=>document.getElementById(`wx-${j}`).classList.toggle('active',j===i));
-  saveState();
-  render();
-}
-
-function onCropChange(){
-  S.crop = document.getElementById('crop-sel').value;
-  S.kcbManual = false; S.kcbOverride = null;
-  autoPositionKcb(); drawKcbCurve(); renderCards();
-  saveState();
-}
-
-async function onStateChange(){
-  S.state = document.getElementById('state-sel').value;
-  S.county = null;
-  document.getElementById('county-sel').innerHTML = '<option disabled selected>Loading…</option>';
-  Object.keys(etStore).forEach(k => delete etStore[k]);
-  await fetchCountyData(S.state);
-  saveState();
-  render();
+  sel.addEventListener('change', onCountyChange);
+  sel.value = 'Riley';
+  onCountyChange();
 }
 
 function onCountyChange(){
-  S.county = document.getElementById('county-sel').value;
-  const stLabel = STATES[S.state]?.label || S.state;
-  document.getElementById('footer').textContent =
-    `ET7 · ${S.county} County, ${stLabel} · KSU Soil Water Processes Lab, Agronomy · Climate data: GRIDMET`;
-  document.getElementById('caption-county').textContent = `${S.county} County, ${stLabel}`;
-  saveState();
-  render();
+  var county = document.getElementById('county-sel').value;
+  var slug   = county.toLowerCase().replace(/\s+/g, '_');
+  var imgPath = 'images/' + slug + '_ks.jpg';
+  var pdfPath = 'pdfs/'   + slug + '_ks.pdf';
+
+  document.getElementById('county-img').src = imgPath;
+
+  var jpg = document.getElementById('btn-jpg');
+  jpg.href = imgPath; jpg.download = slug + '_et7.jpg';
+
+  var pdf = document.getElementById('btn-pdf');
+  pdf.href = pdfPath; pdf.download = slug + '_et7.pdf';
+
+  updateSummary(county);
 }
 
-// ═══════════════════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════════════════
-function render(){ renderTable(); renderCards(); drawKcbCurve(); renderChart(); }
-
-// ═══════════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════════
-async function init(){
-  // Restore saved settings (if any) before building UI
-  const saved = loadState();
-
-  // Build crop dropdown from CROPS
-  const cropSel = document.getElementById('crop-sel');
-  Object.entries(CROPS).forEach(([key, c]) => {
-    const o = document.createElement('option');
-    o.value = key; o.textContent = c.name;
-    if(key === S.crop) o.selected = true;
-    cropSel.appendChild(o);
-  });
-
-  // Unit toggle
-  document.getElementById('btn-in').classList.toggle('active', S.unit==='in');
-  document.getElementById('btn-mm').classList.toggle('active', S.unit==='mm');
-
-  // Weather buttons — set full className to preserve wx-c/wx-w color classes
-  document.getElementById('wx-0').className='wx-btn wx-c'+(S.wxIdx===0?' active':'');
-  document.getElementById('wx-1').className='wx-btn'       +(S.wxIdx===1?' active':'');
-  document.getElementById('wx-2').className='wx-btn wx-w'+(S.wxIdx===2?' active':'');
-
-  // State selector
-  document.getElementById('state-sel').value = S.state;
-
-  setupKcbDrag();
-  window.addEventListener('resize', ()=>{ drawKcbCurve(); renderChart(); });
-
-  // Show terms modal once — localStorage persists when PWA is closed
-  if(!localStorage.getItem('et7_tos')){
-    document.getElementById('tos-modal').style.display = 'flex';
-    document.querySelector('.modal-close').addEventListener('click', ()=>{
-      localStorage.setItem('et7_tos','1');
-    });
-  }
-
-  // Load county data, then restore saved county selection
-  await fetchCountyData(S.state);
-  if(S.county && etStore[S.county]){
-    document.getElementById('county-sel').value = S.county;
-    const stLabel = STATES[S.state]?.label || S.state;
-    document.getElementById('footer').textContent =
-      `ET7 · ${S.county} County, ${stLabel} · KSU Soil Water Processes Lab, Agronomy · Climate data: GRIDMET`;
-    document.getElementById('caption-county').textContent = `${S.county} County, ${stLabel}`;
-  }
-
-  // Restore rain — saved in mm, convert to display unit
-  if(saved?.rain != null){
-    const ri = document.getElementById('rain-in');
-    const rainMm = saved.rain;
-    ri.value = S.unit==='in' ? (rainMm/25.4).toFixed(2) : rainMm.toFixed(1);
-  }
-
-  // Kcb restore — if user had manually set it, honour the saved position;
-  // otherwise auto-position from planting date as usual.
-  if(S.kcbManual){
-    // Restore from saved override value (typed) or saved dap position (dragged)
-    if(S.kcbOverride != null){
-      document.getElementById('kcb-num').value = S.kcbOverride.toFixed(2);
-    } else if(S.kcbDap != null){
-      const v = kcbAtDap(S.crop, S.kcbDap);
-      if(v != null) document.getElementById('kcb-num').value = v.toFixed(2);
-    }
-    drawKcbCurve();
-  } else {
-    autoPositionKcb();
-  }
-  render();
+function showErr(){
+  document.getElementById('county-img').style.display = 'none';
+  document.getElementById('img-error').style.display  = 'block';
+}
+function hideErr(){
+  document.getElementById('county-img').style.display = 'block';
+  document.getElementById('img-error').style.display  = 'none';
 }
 
 init();
-
-// ── SERVICE WORKER REGISTRATION ───────────────────────────
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => {
-        // Check for updates every time the app loads
-        reg.update();
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if(newWorker.state === 'installed' && navigator.serviceWorker.controller){
-              // New version available — silently activate on next load
-              // (could show a toast here if desired)
-              console.log('ET7: update available, will activate on next reload');
-            }
-          });
-        });
-      })
-      .catch(err => console.warn('ET7: service worker registration failed:', err));
-  });
-}
 </script>
 </body>
 </html>
